@@ -1,39 +1,37 @@
--- create Db
-CREATE DATABASE university_db
+-- Create the Database
+CREATE DATABASE university_db;
 
--- * Create tables:
---student:
+-- * Create Tables:
+
+-- students:
 CREATE TABLE students (
-    student_id SERIAL PRIMARY KEY NOT NULL,
+    student_id SERIAL PRIMARY KEY,
     student_name VARCHAR(50) NOT NULL,
     age INTEGER NOT NULL,
     email VARCHAR(100) NOT NULL,
-    frontend_marks INTEGER NOT NULL,
-    backend_marks INTEGER NOT NULL,
+    frontend_mark INTEGER NOT NULL,
+    backend_mark INTEGER NOT NULL,
     "status" VARCHAR(20) DEFAULT NULL
 );
 
---courses:
+-- courses:
 CREATE TABLE courses (
-    course_id SERIAL PRIMARY KEY NOT NULL,
+    course_id SERIAL PRIMARY KEY,
     course_name VARCHAR(50) NOT NULL,
     credits INTEGER NOT NULL
 );
 
--- enrollments:
-CREATE TABLE enrollments (
-    enrollment_id SERIAL PRIMARY KEY NOT NULL,
-    student_id INTEGER NOT NULL,
-    course_id INTEGER NOT NULL,
-    FOREIGN KEY (student_id) REFERENCES students(student_id),
-    FOREIGN KEY (course_id) REFERENCES courses(course_id)
+-- enrollment:
+CREATE TABLE enrollment (
+    enrollment_id SERIAL PRIMARY KEY,
+    student_id INTEGER NOT NULL REFERENCES students(student_id),
+    course_id INTEGER NOT NULL REFERENCES courses(course_id)
 );
 
+-- * Insert Sample Data:
 
--- * Insert data:
-
--- students:
-INSERT INTO students (student_name, age, email, frontend_marks, backend_marks, "status")
+-- students table
+INSERT INTO students (student_name, age, email, frontend_mark, backend_mark, "status")
 VALUES
 ('Sameer', 21, 'sameer@example.com', 48, 60, NULL),
 ('Zoya', 23, 'zoya@example.com', 52, 58, NULL),
@@ -42,85 +40,70 @@ VALUES
 ('Sophia', 22, 'sophia@example.com', 50, 52, NULL),
 ('Hasan', 23, 'hasan@gmail.com', 43, 39, NULL);
 
--- courses:
-INSERT INTO courses (course_name,credits)
+-- courses table
+INSERT INTO courses (course_name, credits)
 VALUES
 ('Next.js', 3),
 ('React.js', 4),
 ('Databases', 3),
 ('Prisma', 3);
 
-
--- enrollments:
-INSERT INTO enrollments (enrollment_id, student_id, course_id)
+-- enrollment table
+INSERT INTO enrollment (student_id, course_id)
 VALUES 
-(1, 1, 1),
-(2, 1, 2),
-(3, 2, 1),
-(4, 3, 2);
+(1, 1),
+(1, 2),
+(2, 1),
+(3, 2);
 
+-- * Queries:
 
---* Query:
-
--- Insert a new student record
-INSERT INTO students (student_name, age, email, frontend_marks, backend_marks, "status")
+--1: Insert a new student record
+INSERT INTO students (student_name, age, email, frontend_mark, backend_mark, "status")
 VALUES
-('Majnu vai', 21, 'majnu@vai.com', 48, 60, NULL);
+('Majnu Vai', 21, 'majnu@vai.com', 48, 60, NULL);
 
--- Retrieve the names of all students who are enrolled in the course titled 'Next.js'.
+--2: Retrieve the names of all students who are enrolled in the course titled 'Next.js'
 SELECT s.student_name
 FROM students AS s
-JOIN enrollments AS e ON s.student_id = e.student_id -- JOINing the students with enrollments
-JOIN courses AS c ON e.course_id = c.course_id -- joining the enrollments with courses
-WHERE c.course_name = 'Next.js'; -- query for next.js course
+JOIN enrollment AS e ON s.student_id = e.student_id
+JOIN courses AS c ON e.course_id = c.course_id
+WHERE c.course_name = 'Next.js';
 
-
---* Update the status of the student with the highest total (frontend_mark + backend_mark) to 'Awarded'.
-
--- view to get the id of the student with the highest total
-CREATE VIEW highest_total AS 
-  SELECT student_id FROM students
-  ORDER BY frontend_marks + backend_marks DESC
-  LIMIT 1;
-
--- uptdate query
+--3: Update the status of the student with the highest total (frontend_mark + backend_mark) to 'Awarded'
 UPDATE students
 SET "status" = 'Awarded'
 WHERE student_id = (
- SELECT * FROM highest_total
-); -- sub query to get the id of the student with the highest total
+  SELECT student_id
+  FROM students
+  ORDER BY (frontend_mark + backend_mark) DESC
+  LIMIT 1
+);
 
---* Delete all courses that have no students enrolled.
-
-
--- view to retrive all course ids that have students enrolled
-CREATE VIEW enrolled_courses AS
-  SELECT course_id FROM enrollments ;
-
+--4: Delete all courses that have no students enrolled
 DELETE FROM courses
 WHERE course_id NOT IN (
-  SELECT * FROM enrolled_courses
-); -- sub query to get all course ids that have no students enrolled
+  SELECT DISTINCT course_id
+  FROM enrollment
+);
 
-
---* Retrieve the names of students using a limit of 2, starting from the 3rd student.
+--5: Retrieve the names of students using a limit of 2, starting from the 3rd student
 SELECT student_name
 FROM students
 ORDER BY student_id
-LIMIT 2 OFFSET 2
+LIMIT 2 OFFSET 2;
 
+--6: Retrieve the course names and the number of students enrolled in each course
+SELECT c.course_name, COUNT(e.student_id) AS students_enrolled
+FROM courses AS c
+LEFT JOIN enrollment AS e ON c.course_id = e.course_id
+GROUP BY c.course_id;
 
---* Retrieve the course names and the number of students enrolled in each course.
-SELECT course_name, COUNT(*) AS students_enrolled 
-FROM enrollments 
-JOIN courses ON enrollments.course_id = courses.course_id 
-GROUP BY courses.course_id;
-
---* Calculate and display the average age of all students
+--7: Calculate and display the average age of all students
 SELECT AVG(age) AS average_age FROM students;
 
--- *Retrieve the names of students whose email addresses contain 'example.com'.
-SELECT student_name FROM students
-WHERE email LIKE '%@example.com' --qury for all that have @example.com at end
-ORDER BY student_id
-
+--8: Retrieve the names of students whose email addresses contain 'example.com'
+SELECT student_name
+FROM students
+WHERE email LIKE '%@example.com'
+ORDER BY student_id;
